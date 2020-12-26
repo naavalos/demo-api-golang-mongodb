@@ -15,7 +15,7 @@ Devuelve **todas** las personas de la base de datos
 >```sh
 >[
 >   {
->      "_id":"1",
+>      "dni":"11111111",
 >      "firstname":"Juan",
 >      "lastname":"Perez",
 >      "adress":{
@@ -24,7 +24,7 @@ Devuelve **todas** las personas de la base de datos
 >      }
 >   },
 >   {
->      "_id":"2",
+>      "dni":"22222222",
 >      "firstname":"Ana",
 >      "lastname":"Lia",
 >      "adress":{
@@ -35,8 +35,8 @@ Devuelve **todas** las personas de la base de datos
 >]
 >```
 
-- ### GET --> [http://localhost:8080/people/{_id}](http://localhost:8080/people/{_id})
-Devuelve la persona con **_id**=*1*
+- ### GET --> [http://localhost:8080/people/{dni}](http://localhost:8080/people/{dni})
+Devuelve la persona con **dni**=*11111111*
 
 >###### Response
 >```sh
@@ -44,7 +44,7 @@ Devuelve la persona con **_id**=*1*
 >```
 >```sh
 >{
->   "_id":"1",
+>   "dni":"11111111",
 >   "firstname":"Juan",
 >   "lastname":"Perez",
 >   "adress":{
@@ -60,6 +60,7 @@ Crea una persona
 >###### Request
 >```sh
 >{
+>   "dni":"33333333",
 >   "firstname":"Nahuel",
 >   "lastname":"Avalos",
 >   "adress":{
@@ -72,6 +73,53 @@ Crea una persona
 >###### Response
 >```sh
 >200-Ok
+>```
+>```sh
+>{
+>   "InsertedID": "xxxxxxxxxxxxxxxxxxxxxxxx"
+>}
+>```
+
+- ### PUT --> [http://localhost:8080/people/{dni}](http://localhost:8080/people/{dni})
+Modifica la persona con **dni**=*11111111*
+
+>###### Request
+>```sh
+>{
+>   "dni":"33333333",
+>   "firstname":"Nahuel Ivan",
+>   "lastname":"Avalos",
+>   "adress":{
+>      "street":"Evergreen Terrace",
+>      "number":"742"
+>   }
+>}
+>```
+
+>###### Response
+>```sh
+>200-OK
+>```
+>```sh
+>{
+>   "MatchedCount": 1,
+>   "ModifiedCount": 1,
+>   "UpsertedCount": 0,
+>   "UpsertedID": null
+>}
+>```
+
+- ### DELETE --> [http://localhost:8080/people/{dni}](http://localhost:8080/people/{dni})
+Elimina la persona con **dni**=*11111111*
+
+>###### Response
+>```sh
+>200-OK
+>```
+>```sh
+>{
+>   "DeletedCount": 1
+>}
 >```
 
 ## Tecnología
