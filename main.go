@@ -1,0 +1,103 @@
+package main
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"time"
+
+	"github.com/gorilla/mux"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+type Person struct {
+	ID        primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
+	FirstName string             `json:"firstname,omitempty" bson:"firstname,omitempty"`
+	LastName  string             `json:"lastname,omitempty" bson:"lastname,omitempty"`
+	Adress    *Adress            `json:"adress,omitempty" bson:"adress,omitempty"`
+}
+
+type Adress struct {
+	Street string `json:"street,omitempty"`
+	Number string `json:"number,omitempty"`
+}
+
+//MongoDB
+var client *mongo.Client
+
+func main() {
+	fmt.Println("Running...")
+	//mongodb
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	client, _ = mongo.Connect(ctx, options.Client().ApplyURI("mongodb://localhost:27017"))
+	//routes
+	router := mux.NewRouter()
+	router.HandleFunc("/people", createPerson).Methods("POST")
+	router.HandleFunc("/people", getPeople).Methods("GET")
+	router.HandleFunc("/people/{id}", getPerson).Methods("GET")
+	//start server
+	http.ListenAndServe(":8080", router)
+}
+
+func createPerson(response http.ResponseWriter, request *http.Request) {
+	//localhost:8080/people
+	//POST-->{"firstname":"Nahuel","lastname":"Avalos","adress":{"street":"Avenida Siempreviva","number":"742"}}
+	response.Header().Add("content-type", "application/json")
+	var person Person
+	json.NewDecoder(request.Body).Decode(&person)
+	collection := client.Database("golang").Collection("people")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	result, _ := collection.InsertOne(ctx, person)
+	json.NewEncoder(response).Encode(result)
+}
+
+func getPeople(response http.ResponseWriter, request *http.Request) {
+	//localhost:8080/people
+	response.Header().Add("content-type", "application/json")
+	var people []Person
+	collection := client.Database("golang").Collection("people")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	cursor, err := collection.Find(ctx, bson.M{})
+	if err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{"message": "` + err.Error() + `"}`))
+		return
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var person Person
+		cursor.Decode(&person)
+		people = append(people, person)
+	}
+	if err := cursor.Err(); err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{"message": "` + err.Error() + `"}`))
+		return
+	}
+	json.NewEncoder(response).Encode(people)
+}
+
+func getPerson(response http.ResponseWriter, request *http.Request) {
+	//localhost:8080/people/{_id}
+	response.Header().Add("content-type", "application/json")
+	params := mux.Vars(request)
+	id, _ := primitive.ObjectIDFromHex(params["id"])
+	var person Person
+	collection := client.Database("golang").Collection("people")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err := collection.FindOne(ctx, Person{ID: id}).Decode(&person)
+	if err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{"message": "` + err.Error() + `"}`))
+		return
+	}
+	json.NewEncoder(response).Encode(person)
+}
